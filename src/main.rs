@@ -1,5 +1,6 @@
 use rdkafka::{config::ClientConfig, producer::BaseProducer};
 use std::{
+    ops::Deref,
     sync::{Arc, Mutex},
     thread,
 };
@@ -15,17 +16,22 @@ fn main() {
         .unwrap_or_else(|e| panic!("kafkane error {e}"));
     let producer = Arc::new(Mutex::new(producer));
 
-    let producer_clone = Arc::clone(&producer);
+    {
+        let producer_clone = Arc::clone(&producer);
+        threads.push(thread::spawn(move || {
+            let prod = producer_clone.lock().unwrap();
+            net_cutter::net_cutter(&*prod);
+        }));
+    }
 
-    threads.push(thread::spawn(move || {
-        let prod = producer_clone.lock().unwrap();
-        net_cutter::net_cutter(&*prod);
-    }));
+    {
+        let producer_clone = Arc::clone(&producer);
+        threads.push(thread::spawn(move || {
+            let prod = producer_clone.lock().unwrap();
+            btrfs_scrub::btrfs_scrub(prod.deref())
+        }));
+    }
 
-    threads.push(thread::spawn(move || {
-        let prod = producer_clone.lock().unwrap();
-        btrfs_scrub::btrfs_scrub(&*prod)
-    }));
     for t in threads.into_iter() {
         t.join().unwrap()
     }

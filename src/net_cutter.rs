@@ -1,5 +1,5 @@
 use chrono::Local;
-use rdkafka::producer::{BaseProducer, BaseRecord};
+use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use std::{process::Command, process::Stdio, thread, time::Duration};
 
 const IFACE: &str = "eth0";
@@ -40,6 +40,8 @@ pub fn net_cutter(producer: &BaseProducer) {
                 .key("key")
                 .payload(publised_text.as_str()),
         );
+
+        let _ = producer.flush(Duration::from_secs(3));
     };
 
     loop {
