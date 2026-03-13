@@ -22,7 +22,7 @@ pub fn btrfs_scrub(producer: &BaseProducer) {
                 .unwrap();
             let msg = String::from_utf8_lossy(&scrub_status.stdout).to_string();
             let _ = producer.send(BaseRecord::to("logging").key("key").payload(msg.as_str()));
-            let _ = producer.flush(Duration::from_secs(5));
+            let _ = producer.flush(Duration::from_secs(0));
         }
     }
 }
