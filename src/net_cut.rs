@@ -45,7 +45,7 @@ fn publish(producer: &BaseProducer, label: &str, state: &NetworkStatus) {
         .send(BaseRecord::to("logging").key("key").payload(text.as_str()))
         .unwrap();
 
-    producer.flush(Duration::MAX).unwrap();
+    producer.flush(Duration::from_secs(5)).unwrap();
 }
 
 pub fn link_cut(producer: &BaseProducer) {
