@@ -5,7 +5,7 @@ use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
 mod btrfs_scrub;
-mod net_cut;
+mod net_monitor;
 mod telegram_consumer;
 
 pub static TOKEN: OnceLock<String> = OnceLock::new();
@@ -36,10 +36,13 @@ async fn main() {
 
     let consumer_handle = tokio::spawn(telegram_consumer::telegram_consumer());
 
-    // BaseProducer is Send+Sync, no Mutex needed — kedua thread bisa pakai bareng!
+    // yang perlu dimutex-kan adalah yang polling, takutnya poling hancur karena race condition,
+    // kalau up kebuffer mah lock-free ke partisi lokal, aman. ThreadedProducer itu punya thread
+    // sendiri buat ngurusin polling2an, jadi udah diurusin dari sana, kita gak bikin pollingan
+    // sendiri, jadi aman full dari race condition, gausah dibikin mutex.
     let producer_clone = Arc::clone(&producer);
     let net_test_handle = tokio::task::spawn_blocking(move || {
-        net_cut::link_cut(&*producer_clone);
+        net_monitor::net_status(&*producer_clone);
     });
 
     let producer_clone = Arc::clone(&producer);

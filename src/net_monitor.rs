@@ -26,14 +26,6 @@ fn ping_iface(iface: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn set_iface(iface: &str, up: bool) {
-    let state = if up { "up" } else { "down" };
-    Command::new("ip")
-        .args(["link", "set", iface, state])
-        .status()
-        .unwrap();
-}
-
 fn publish(
     producer: &ThreadedProducer<DefaultProducerContext>,
     label: &str,
@@ -50,7 +42,7 @@ fn publish(
         .unwrap();
 }
 
-pub fn link_cut(producer: &ThreadedProducer<DefaultProducerContext>) {
+pub fn net_status(producer: &ThreadedProducer<DefaultProducerContext>) {
     let mut current_network_status = NetworkStatus::Up;
 
     publish(producer, "init", &current_network_status);
@@ -61,20 +53,14 @@ pub fn link_cut(producer: &ThreadedProducer<DefaultProducerContext>) {
         match &current_network_status {
             NetworkStatus::Up => {
                 if !ping_iface("eth0") {
-                    set_iface("eth0", false);
                     current_network_status = NetworkStatus::Down;
                     publish(producer, "eth0", &NetworkStatus::Down);
                 }
             }
             NetworkStatus::Down => {
-                set_iface("eth0", true); // nyalain dulu
-                thread::sleep(Duration::from_secs(30));
                 if ping_iface("eth0") {
-                    // baru ping
                     current_network_status = NetworkStatus::Up;
                     publish(producer, "eth0", &NetworkStatus::Up);
-                } else {
-                    set_iface("eth0", false); // gagal, matiin lagi
                 }
             }
         }
