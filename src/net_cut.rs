@@ -1,5 +1,5 @@
 use chrono::Local;
-use rdkafka::producer::{BaseProducer, BaseRecord};
+use rdkafka::producer::{BaseRecord, DefaultProducerContext, ThreadedProducer};
 use std::{process::Command, process::Stdio, thread, time::Duration};
 
 enum NetworkStatus {
@@ -34,7 +34,11 @@ fn set_iface(iface: &str, up: bool) {
         .unwrap();
 }
 
-fn publish(producer: &BaseProducer, label: &str, state: &NetworkStatus) {
+fn publish(
+    producer: &ThreadedProducer<DefaultProducerContext>,
+    label: &str,
+    state: &NetworkStatus,
+) {
     let now = Local::now();
     let mut text = now.format("%d %B %Y - %H:%M:%S ").to_string();
     text.push_str(label);
@@ -44,11 +48,9 @@ fn publish(producer: &BaseProducer, label: &str, state: &NetworkStatus) {
     producer
         .send(BaseRecord::to("logging").key("key").payload(text.as_str()))
         .unwrap();
-
-    producer.poll(Duration::from_secs(0));
 }
 
-pub fn link_cut(producer: &BaseProducer) {
+pub fn link_cut(producer: &ThreadedProducer<DefaultProducerContext>) {
     let mut current_network_status = NetworkStatus::Up;
 
     publish(producer, "init", &current_network_status);

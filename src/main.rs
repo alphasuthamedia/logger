@@ -1,4 +1,5 @@
-use rdkafka::{config::ClientConfig, producer::BaseProducer};
+use rdkafka::producer::DefaultProducerContext;
+use rdkafka::{config::ClientConfig, producer::ThreadedProducer};
 use std::env;
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
@@ -23,7 +24,7 @@ async fn main() {
         .set(env::var("KAFKA_SERVER").expect("KAFKA_SERVER not set"))
         .ok();
 
-    let producer: Arc<BaseProducer> = Arc::new(
+    let producer: Arc<ThreadedProducer<DefaultProducerContext>> = Arc::new(
         ClientConfig::new()
             .set(
                 "bootstrap.servers",

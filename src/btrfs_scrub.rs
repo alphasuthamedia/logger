@@ -1,8 +1,8 @@
 use std::{process::Command, thread, time::Duration};
 
-use rdkafka::producer::{BaseProducer, BaseRecord};
+use rdkafka::producer::{BaseRecord, DefaultProducerContext, ThreadedProducer};
 
-pub fn btrfs_scrub(producer: &BaseProducer) {
+pub fn btrfs_scrub(producer: &ThreadedProducer<DefaultProducerContext>) {
     loop {
         // kodinganku rusak btrfs poolku kena scrub terus menerus jir
         thread::sleep(Duration::from_hours(24 * 30));
@@ -22,7 +22,6 @@ pub fn btrfs_scrub(producer: &BaseProducer) {
                 .unwrap();
             let msg = String::from_utf8_lossy(&scrub_status.stdout).to_string();
             let _ = producer.send(BaseRecord::to("logging").key("key").payload(msg.as_str()));
-            let _ = producer.poll(Duration::from_secs(0));
         }
     }
 }
