@@ -1,10 +1,10 @@
-use rdkafka::{config::ClientConfig, producer::FutureProducer};
+use rdkafka::{config::ClientConfig, producer::BaseProducer};
 use std::env;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, OnceLock};
 
 mod btrfs_scrub;
-mod net_test;
+mod net_cut;
 mod telegram_consumer;
 
 pub static TOKEN: OnceLock<String> = OnceLock::new();
@@ -23,7 +23,7 @@ async fn main() {
         .set(env::var("KAFKA_SERVER").expect("KAFKA_SERVER not set"))
         .ok();
 
-    let producer: FutureProducer = ClientConfig::new()
+    let producer: BaseProducer = ClientConfig::new()
         .set(
             "bootstrap.servers",
             KAFKA_SERVER.get().expect("KAFKA_SERVER hasnt been set yet"),
@@ -38,7 +38,7 @@ async fn main() {
     let producer_clone = Arc::clone(&producer);
     let net_test_handle = tokio::task::spawn_blocking(move || {
         let prod = producer_clone.lock().unwrap();
-        net_test::net_test(&*prod);
+        net_cut::link_cut(&prod);
     });
 
     let producer_clone = Arc::clone(&producer);
