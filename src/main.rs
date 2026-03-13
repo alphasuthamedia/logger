@@ -4,6 +4,7 @@ use std::ops::Deref;
 use std::sync::{Arc, Mutex, OnceLock};
 
 mod btrfs_scrub;
+mod net_test;
 mod telegram_consumer;
 
 pub static TOKEN: OnceLock<String> = OnceLock::new();
@@ -34,11 +35,11 @@ async fn main() {
 
     let consumer_handle = tokio::spawn(telegram_consumer::telegram_consumer());
 
-    // let producer_clone = Arc::clone(&producer);
-    // let net_cutter_handle = tokio::task::spawn_blocking(move || {
-    //     let prod = producer_clone.lock().unwrap();
-    //     net_cutter::net_cutter(&*prod);
-    // });
+    let producer_clone = Arc::clone(&producer);
+    let net_test_handle = tokio::task::spawn_blocking(move || {
+        let prod = producer_clone.lock().unwrap();
+        net_test::net_test(&*prod);
+    });
 
     let producer_clone = Arc::clone(&producer);
     let btrfs_handle = tokio::task::spawn_blocking(move || {
@@ -48,6 +49,6 @@ async fn main() {
 
     // tunggu semua selesai
     consumer_handle.await.unwrap();
-    // net_cutter_handle.await.unwrap();
+    net_test_handle.await.unwrap();
     btrfs_handle.await.unwrap();
 }

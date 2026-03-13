@@ -2,7 +2,6 @@ use chrono::Local;
 use rdkafka::producer::{FutureProducer, FutureRecord, Producer};
 use std::{process::Command, process::Stdio, thread, time::Duration};
 
-const IFACE: &str = "eth0";
 enum NetworkStatus {
     Up,
     Down,
@@ -16,26 +15,20 @@ impl NetworkStatus {
     }
 }
 
-pub fn net_cutter(producer: &FutureProducer) {
+pub fn net_test(producer: &FutureProducer) {
     let mut current_network_status = NetworkStatus::Up;
     // testing
     let _ = producer.send(
-        FutureRecord::to("logging").key("key").payload("Hello"),
+        FutureRecord::to("logging")
+            .key("key")
+            .payload(current_network_status.as_str()),
         Duration::from_secs(0),
     );
-
-    let toggle_iface_state = |state: NetworkStatus| {
-        Command::new("ip")
-            .args(["link", "set", IFACE, state.as_str()])
-            .status()
-            .unwrap();
-    };
 
     let publish_state = |state: NetworkStatus| {
         let now = Local::now();
         let mut publised_text = now.format("%d %B %Y - %H:%M:%S ").to_string();
-        publised_text.push_str(IFACE);
-        publised_text.push_str(" ");
+        publised_text.push_str("Internet ");
         publised_text.push_str(state.as_str());
 
         let _ = producer.send(
@@ -51,7 +44,7 @@ pub fn net_cutter(producer: &FutureProducer) {
     loop {
         thread::sleep(Duration::from_secs(300));
         let ping_status = Command::new("ping")
-            .args(["-I", IFACE, "-c", "3", "8.8.8.8"])
+            .args(["-c", "3", "8.8.8.8"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status()
@@ -61,14 +54,12 @@ pub fn net_cutter(producer: &FutureProducer) {
             (NetworkStatus::Up, true) => continue, // on + berhasil = repeat
             (NetworkStatus::Up, false) => {
                 // on + gagal = down
-                toggle_iface_state(NetworkStatus::Down);
                 publish_state(NetworkStatus::Down);
                 current_network_status = NetworkStatus::Down;
             }
             (NetworkStatus::Down, false) => continue, // off + gagal = repeat
             (NetworkStatus::Down, true) => {
                 // off + berhasil = up
-                toggle_iface_state(NetworkStatus::Up);
                 publish_state(NetworkStatus::Up);
                 current_network_status = NetworkStatus::Up;
             }
