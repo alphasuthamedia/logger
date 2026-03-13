@@ -23,14 +23,19 @@ async fn main() {
         .set(env::var("KAFKA_SERVER").expect("KAFKA_SERVER not set"))
         .ok();
 
-    let producer: BaseProducer = ClientConfig::new()
-        .set(
-            "bootstrap.servers",
-            KAFKA_SERVER.get().expect("KAFKA_SERVER hasnt been set yet"),
-        )
-        .create()
-        .expect("kafkane error");
-    let producer = Arc::new(Mutex::new(producer));
+    let producer: Arc<BaseProducer> = Arc::new(
+        ClientConfig::new()
+            .set(
+                "bootstrap.servers",
+                KAFKA_SERVER.get().expect("KAFKA_SERVER hasnt been set yet"),
+            )
+            .create()
+            .expect("kafkane error"),
+    );
+
+    let consumer_handle = tokio::spawn(telegram_consumer::telegram_consumer());
+
+    // BaseProducer is Send+Sync, no Mutex needed — kedua thread bisa pakai bareng!
     let producer_clone = Arc::clone(&producer);
     let net_test_handle = tokio::task::spawn_blocking(move || {
         let prod = producer_clone.lock().unwrap();
