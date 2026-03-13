@@ -1,5 +1,5 @@
 use chrono::Local;
-use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
+use rdkafka::producer::{FutureProducer, FutureRecord, Producer};
 use std::{process::Command, process::Stdio, thread, time::Duration};
 
 const IFACE: &str = "eth0";
@@ -16,10 +16,13 @@ impl NetworkStatus {
     }
 }
 
-pub fn net_cutter(producer: &BaseProducer) {
+pub fn net_cutter(producer: &FutureProducer) {
     let mut current_network_status = NetworkStatus::Up;
     // testing
-    let _ = producer.send(BaseRecord::to("logging").key("key").payload("Hello"));
+    let _ = producer.send(
+        FutureRecord::to("logging").key("key").payload("Hello"),
+        Duration::from_secs(0),
+    );
 
     let toggle_iface_state = |state: NetworkStatus| {
         Command::new("ip")
@@ -36,9 +39,10 @@ pub fn net_cutter(producer: &BaseProducer) {
         publised_text.push_str(state.as_str());
 
         let _ = producer.send(
-            BaseRecord::to("logging")
+            FutureRecord::to("logging")
                 .key("key")
                 .payload(publised_text.as_str()),
+            Duration::from_secs(0),
         );
 
         let _ = producer.flush(Duration::from_secs(3));

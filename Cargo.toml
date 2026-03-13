@@ -5,4 +5,7 @@ edition = "2024"
 
 [dependencies]
 chrono = "0.4.44"
-rdkafka = { version = "0.39", features = ["cmake-build"], default-features = false }
+rdkafka = { version = "0.39", features = ["tokio", "cmake-build"]}
+tokio = { version = "1.50.0", features = ["full"] }
+reqwest = { version = "0.13", features = ["multipart", "stream"] }
+futures = "0.3.31"

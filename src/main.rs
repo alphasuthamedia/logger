@@ -1,38 +1,54 @@
-use rdkafka::{config::ClientConfig, producer::BaseProducer};
-use std::{
-    ops::Deref,
-    sync::{Arc, Mutex},
-    thread,
-};
+use rdkafka::{config::ClientConfig, producer::FutureProducer};
+use std::env;
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, OnceLock};
 
 mod btrfs_scrub;
 mod net_cutter;
+mod telegram_consumer;
 
-fn main() {
-    let mut threads: Vec<thread::JoinHandle<()>> = vec![];
-    let producer: BaseProducer = ClientConfig::new()
-        .set("bootstrap.servers", "localhost:9092")
+pub static TOKEN: OnceLock<String> = OnceLock::new();
+pub static CHAT_ID: OnceLock<String> = OnceLock::new();
+pub static KAFKA_SERVER: OnceLock<String> = OnceLock::new();
+
+#[tokio::main]
+async fn main() {
+    TOKEN
+        .set(env::var("TELEGRAM_TOKEN").expect("TELEGRAM_TOKEN not set"))
+        .ok();
+    CHAT_ID
+        .set(env::var("CHAT_ID").expect("CHAT_ID not set"))
+        .ok();
+    KAFKA_SERVER
+        .set(env::var("KAFKA_SERVER").expect("KAFKA_SERVER not set"))
+        .ok();
+
+    let producer: FutureProducer = ClientConfig::new()
+        .set(
+            "bootstrap.servers",
+            KAFKA_SERVER.get().expect("KAFKA_SERVER hasnt been set yet"),
+        )
         .create()
-        .unwrap_or_else(|e| panic!("kafkane error {e}"));
+        .expect("kafkane error");
+
     let producer = Arc::new(Mutex::new(producer));
 
-    {
-        let producer_clone = Arc::clone(&producer);
-        threads.push(thread::spawn(move || {
-            let prod = producer_clone.lock().unwrap();
-            net_cutter::net_cutter(&*prod);
-        }));
-    }
+    let consumer_handle = tokio::spawn(telegram_consumer::telegram_consumer());
 
-    {
-        let producer_clone = Arc::clone(&producer);
-        threads.push(thread::spawn(move || {
-            let prod = producer_clone.lock().unwrap();
-            btrfs_scrub::btrfs_scrub(prod.deref())
-        }));
-    }
+    let producer_clone = Arc::clone(&producer);
+    let net_cutter_handle = tokio::task::spawn_blocking(move || {
+        let prod = producer_clone.lock().unwrap();
+        net_cutter::net_cutter(&*prod);
+    });
 
-    for t in threads.into_iter() {
-        t.join().unwrap()
-    }
+    let producer_clone = Arc::clone(&producer);
+    let btrfs_handle = tokio::task::spawn_blocking(move || {
+        let prod = producer_clone.lock().unwrap();
+        btrfs_scrub::btrfs_scrub(prod.deref());
+    });
+
+    // tunggu semua selesai
+    consumer_handle.await.unwrap();
+    net_cutter_handle.await.unwrap();
+    btrfs_handle.await.unwrap();
 }
