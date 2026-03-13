@@ -1,6 +1,6 @@
 use std::{process::Command, thread, time::Duration};
 
-use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
+use rdkafka::producer::{BaseProducer, BaseRecord};
 
 pub fn btrfs_scrub(producer: &BaseProducer) {
     loop {
