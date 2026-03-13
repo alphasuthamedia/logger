@@ -1,5 +1,7 @@
-[sebenernya ini bukan buat tugas, tapi tiba2 dapet tugas random, yaudah comot aja :v](https://univindonesia-my.sharepoint.com/:w:/g/personal/ari_w_office_ui_ac_id/IQBvAL48d0yeQoXCA2zs84R-AWdhRvO1EHaItsPdsmBD7w0?rtime=Hy9dmAGB3kg)
+[sebenernya ini bukan buat tugas, tapi tiba2 dapet tugas random, yaudah comot aja :v](https://univindonesia-my.sharepoint.com/:w:/g/personal/ari_w_office_ui_ac_id/IQBvAL48d0yeQoXCA2zs84R-AWdhRvO1EHaItsPdsmBD7w0?rtime=Hy9dmAGB3kg)  
 [brief explanation - ID](https://youtu.be/2IY0b0pleRY)
+
+---
 
 jadi gini, dulu runner (bg / daemon) buat server saya itu pakai C sama shell/Bash. sederhana aja, cuma capture stdout ke logfile sama stderrnya. setelah ambil matkul AAW kemarin dapat kafka, ngobbrol sama om syahrul, plus makin lama makin banyak yang perlu dimanage, butuh orkestrasi yang enak, cobain rust via rdkafka eh enak... execute sheell jg gampang pakai Command::new().args() dkk, terus mayoritas jg udah  bisa di rust, gak perlu cross compile smaa codebase C lama.... meskpun demikian, rdfkafka cuma wrapper librdkafka (kalau gak salah namanya ini) yang ttp ditulis pakai C, yaudah tinggal ganti linker sama header (kalau perlu / compile beda di arch) aja...
 
