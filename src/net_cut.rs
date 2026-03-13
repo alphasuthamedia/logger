@@ -34,6 +34,20 @@ fn set_iface(iface: &str, up: bool) {
         .unwrap();
 }
 
+fn wait_iface_up(iface: &str) {
+    loop {
+        let output = Command::new("ip")
+            .args(["link", "show", iface])
+            .output()
+            .unwrap();
+        let out = String::from_utf8_lossy(&output.stdout);
+        if out.contains("state UP") {
+            break;
+        }
+        thread::sleep(Duration::from_millis(500));
+    }
+}
+
 fn publish(producer: &BaseProducer, label: &str, state: &NetworkStatus) {
     let now = Local::now();
     let mut text = now.format("%d %B %Y - %H:%M:%S ").to_string();
@@ -66,6 +80,7 @@ pub fn link_cut(producer: &BaseProducer) {
             }
             NetworkStatus::Down => {
                 set_iface("eth0", true); // nyalain dulu
+                wait_iface_up("eth0"); // tunggu beneran up
                 if ping_iface("eth0") {
                     // baru ping
                     current_network_status = NetworkStatus::Up;
