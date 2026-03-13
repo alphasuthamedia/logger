@@ -1,9 +1,10 @@
 use futures::StreamExt;
 use rdkafka::config::ClientConfig;
-use rdkafka::consumer::{Consumer, StreamConsumer};
+use rdkafka::consumer::{CommitMode, Consumer, StreamConsumer};
 use rdkafka::message::Message;
 use reqwest::Client;
 use reqwest::multipart;
+use tokio::time::{Duration, sleep};
 
 // untuk ada biiar biisa ngakes root - main.rs
 use crate::CHAT_ID;
@@ -18,6 +19,7 @@ pub async fn telegram_consumer() {
             KAFKA_SERVER.get().expect("KAFKA_SERVER hasnt been set yet"),
         )
         .set("group.id", "logger") // bebas bikin nama
+        .set("enable.auto.commit", "false")
         .create()
         .unwrap_or_else(|e| panic!("kafkane - consumer error {}", e));
 
@@ -33,16 +35,24 @@ pub async fn telegram_consumer() {
             .and_then(|r| r.ok())
             .unwrap_or("<EMPTY>");
 
-        let form = multipart::Form::new()
-            .text("chat_id", chat_id.clone())
-            .text("text", payload.to_string());
+        loop {
+            let form = multipart::Form::new()
+                .text("chat_id", chat_id.clone())
+                .text("text", payload.to_string());
 
-        telegram
-            .post(format!("https://api.telegram.org/bot{token}/sendMessage"))
-            .multipart(form)
-            .send()
-            .await
-            .expect("gagal kirim");
+            // send() returns Result<Response, Error>. Kalau Ok(response), .map ngubahnya jadi bool (status 2xx atau bukan)
+            if telegram
+                .post(format!("https://api.telegram.org/bot{token}/sendMessage"))
+                .multipart(form)
+                .send()
+                .await
+                .map(|r| r.status().is_success())
+                .unwrap_or(false)
+            {
+                consumer.commit_message(&msg, CommitMode::Async).ok();
+                break;
+            }
+            sleep(Duration::from_secs(60)).await;
+        }
     }
-    println!("Consumer Done ~")
 }
