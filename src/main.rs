@@ -24,7 +24,7 @@ async fn main() {
         .set(env::var("KAFKA_SERVER").expect("KAFKA_SERVER not set"))
         .ok();
 
-    let _ = kafka_broker::start_boker();
+    let _ = kafka_broker::start_boker().await;
     let consumer_handle = tokio::spawn(telegram_consumer::telegram_consumer());
     let producer: FutureProducer = ClientConfig::new()
         .set(
