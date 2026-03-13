@@ -4,6 +4,7 @@ use std::ops::Deref;
 use std::sync::{Arc, Mutex, OnceLock};
 
 mod btrfs_scrub;
+mod kafka_broker;
 mod net_cutter;
 mod telegram_consumer;
 
@@ -23,6 +24,8 @@ async fn main() {
         .set(env::var("KAFKA_SERVER").expect("KAFKA_SERVER not set"))
         .ok();
 
+    let _ = kafka_broker::start_boker();
+    let consumer_handle = tokio::spawn(telegram_consumer::telegram_consumer());
     let producer: FutureProducer = ClientConfig::new()
         .set(
             "bootstrap.servers",
@@ -30,12 +33,9 @@ async fn main() {
         )
         .create()
         .expect("kafkane error");
-
     let producer = Arc::new(Mutex::new(producer));
-
-    let consumer_handle = tokio::spawn(telegram_consumer::telegram_consumer());
-
     let producer_clone = Arc::clone(&producer);
+
     let net_cutter_handle = tokio::task::spawn_blocking(move || {
         let prod = producer_clone.lock().unwrap();
         net_cutter::net_cutter(&*prod);

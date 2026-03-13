@@ -7,12 +7,16 @@ use reqwest::multipart;
 
 // untuk ada biiar biisa ngakes root - main.rs
 use crate::CHAT_ID;
+use crate::KAFKA_SERVER;
 use crate::TOKEN;
 pub async fn telegram_consumer() {
     let token = TOKEN.get().expect("TOKEN hasnt been set yet");
     let chat_id = CHAT_ID.get().expect("CHAT_ID hasnt been set yet");
     let consumer: StreamConsumer = ClientConfig::new()
-        .set("bootstrap.servers", "localhost:9092")
+        .set(
+            "bootstrap.servers",
+            KAFKA_SERVER.get().expect("KAFKA_SERVER hasnt been set yet"),
+        )
         .set("group.id", "logger") // bebas bikin nama
         .create()
         .unwrap_or_else(|e| panic!("kafkane - consumer error {}", e));
