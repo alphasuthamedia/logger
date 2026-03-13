@@ -51,6 +51,7 @@ TAMBAHAN PENJELASAN - Beberapa terkait internal rdkafka
 kapan kirim ke broker, sebenernya setelah .send() udah dikirim ke broker via thread internal
 .flush(time) -> poll terus2 an sampai semua pesan confirmed + callback selesai
 jadi flush sebenrnya cuma poll trs sampe in_flight_count nya == 0, in_flight = pesan yang sudah dikirim ke broker tapi belum dapat ACK balik.
+```
 producer kirim pesan ke broker
     ↓
 pesan "in-flight" ← statusnya di sini
@@ -60,6 +61,7 @@ broker proses + simpan ke partition
 broker kirim ACK balik
     ↓
 tidak in-flight lagi, counter --
+```
 ThreadedProducer itu apa -> Producer biasa tapi polling terus2an
 
 NOTE : ditulis untuk diri sendiri, tidak bergaransi. ditulis dengan bantuan AI (eg. destructuring rdkafka libs, etc), otherwise no. handwritten and not battle-tested. Use at your own risk.
