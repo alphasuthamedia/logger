@@ -1,7 +1,7 @@
 use rdkafka::{config::ClientConfig, producer::BaseProducer};
 use std::env;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, OnceLock};
 
 mod btrfs_scrub;
 mod net_cut;
@@ -38,14 +38,12 @@ async fn main() {
     // BaseProducer is Send+Sync, no Mutex needed — kedua thread bisa pakai bareng!
     let producer_clone = Arc::clone(&producer);
     let net_test_handle = tokio::task::spawn_blocking(move || {
-        let prod = producer_clone.lock().unwrap();
-        net_cut::link_cut(&prod);
+        net_cut::link_cut(&*producer_clone);
     });
 
     let producer_clone = Arc::clone(&producer);
     let btrfs_handle = tokio::task::spawn_blocking(move || {
-        let prod = producer_clone.lock().unwrap();
-        btrfs_scrub::btrfs_scrub(prod.deref());
+        btrfs_scrub::btrfs_scrub(producer_clone.deref());
     });
 
     // tunggu semua selesai
