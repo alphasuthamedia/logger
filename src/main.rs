@@ -30,11 +30,7 @@ async fn main() {
         )
         .create()
         .expect("kafkane error");
-
     let producer = Arc::new(Mutex::new(producer));
-
-    let consumer_handle = tokio::spawn(telegram_consumer::telegram_consumer());
-
     let producer_clone = Arc::clone(&producer);
     let net_test_handle = tokio::task::spawn_blocking(move || {
         let prod = producer_clone.lock().unwrap();
