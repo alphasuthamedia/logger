@@ -1,5 +1,5 @@
 use chrono::Local;
-use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
+use rdkafka::producer::{BaseProducer, BaseRecord};
 use std::{process::Command, process::Stdio, thread, time::Duration};
 
 enum NetworkStatus {
@@ -45,7 +45,7 @@ fn publish(producer: &BaseProducer, label: &str, state: &NetworkStatus) {
         .send(BaseRecord::to("logging").key("key").payload(text.as_str()))
         .unwrap();
 
-    producer.flush(Duration::from_secs(0)).unwrap();
+    producer.poll(Duration::from_secs(0));
 }
 
 pub fn link_cut(producer: &BaseProducer) {
