@@ -1,5 +1,36 @@
 [sebenernya ini bukan buat tugas, tapi tiba2 dapet tugas random, yaudah comot aja :v](https://univindonesia-my.sharepoint.com/:w:/g/personal/ari_w_office_ui_ac_id/IQBvAL48d0yeQoXCA2zs84R-AWdhRvO1EHaItsPdsmBD7w0?rtime=Hy9dmAGB3kg)  
-[brief explanation - ID](https://youtu.be/2IY0b0pleRY)
+[brief explanation - ID](https://youtu.be/2IY0b0pleRY)  
+buat systemdnya : 
+```ini
+### Editing /etc/systemd/system/autorun.service.d/override.conf
+### Anything between here and the comment below will become the contents of the drop-in file
+
+[Service]
+Environment="TELEGRAM_TOKEN=<HIDDEN>"
+Environment="KAFKA_SERVER=localhost:9092"
+Environment="CHAT_ID=<HIDDEN>"
+ExecStart=
+ExecStart=/bin/sh -c '/home/alpha/autorun/kafka_2.13-4.2.0/bin/kafka-server-start.sh /home/alpha/autorun/kafka_2.13-4.2.0/config/server.properties > /dev/null 2>&1 & while ! nc -z localhost 9092; do sleep 1; done; /home/alpha/autorun/logger/target/release/logger > /home/alpha/autorun/logs/logger.log 2>&1'
+
+### Edits below this comment will be discarded
+
+
+### /etc/systemd/system/autorun.service
+# [Unit]
+# Description=Autorun dicabut + tele_bot
+# After=network.target
+#
+# [Service]
+# Type=simple
+# WorkingDirectory=/home/alpha/autorun
+# ExecStart=/bin/bash -c '/home/alpha/autorun/dicabut.sh & /home/alpha/autorun/tele_bot & wait'
+# Restart=always
+# RestartSec=5
+# User=root
+#
+# [Install]
+# WantedBy=multi-user.target
+```
 
 ---
 
